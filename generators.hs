@@ -18,7 +18,7 @@ lyndonWords  = filterPrelist (==) -- lyndon number equals length <=> the word is
 necklaces    = filterPrelist (\n p -> n `mod` p == 0) -- straightforward
 
 -- Generates list of words with their lyndon numbers, tupled like (word, lyndonNumber)
--- initial tuple should be -- duh! -- ([0], 1): smallest non-empty lyndon word
+-- to get marked words you should call it on every one-symbol word
 prelist :: (Word, LyndonNumber) -> 
              Reader (TargetLength, AlphabetLength) [(Word, LyndonNumber)]
 prelist (word, p) = ask >>= \(n, k) ->
@@ -38,12 +38,17 @@ filterPrelist fn n = mpr $ filterPrelist' fn n
 
 filterPrelist' :: (Int -> Int -> Bool) -> Int -> [Word]
 filterPrelist' fn n =
-  let l = runReader (prelist ([0], 1)) (n,alph) ++ [(replicate n 1, 1)]
+  let l = runOneSymbolWords n
       fn1 (word, lyndon) = fn (length word) lyndon
   in map fst $ filter fn1 l
 
 runPrelist :: TargetLength -> String
-runPrelist n = mshp $ runReader (prelist ([0], 1)) (n, alph)
+runPrelist n = mshp $ runOneSymbolWords n
+
+runOneSymbolWords :: TargetLength -> [(Word, LyndonNumber)]
+runOneSymbolWords n =
+  let runOne = \i -> runReader (prelist ([i], 1)) (n, alph)
+  in  foldl (\a -> (a ++) . runOne) [] [0..(alph - 1)]
 
 shp :: (Word, LyndonNumber) -> String
 shp (w,p) = pr w ++ ":" ++ show p
